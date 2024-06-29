@@ -76,7 +76,8 @@ def plot_result(loss_list,title,dir_path):
     plt.xlabel('Epoch')
     plt.ylabel(title)
     plt.xlim(0, 100)
-    plt.ylim(0, 1)
+    if 'acc' in title.lower():
+        plt.ylim(0, 1)
     plt.legend()
     plt.grid(True)
     plt.savefig(dir_path+f'{title}.png')
@@ -91,8 +92,8 @@ def run_training(epoch_num,threshold,model,optimizer,criterion,X_train,y_train,X
     val_accuracies = []
     
     train_loss,train_accuracy,val_loss,val_accuracy = eval(model,threshold,criterion,X_train,y_train,X_val,y_val)
-    prev_accuracy = train_accuracy
-    pred_val_accuracy = val_accuracy
+    best_train_accuracy = train_accuracy
+    best_val_accuracy = val_accuracy
     best_model_wights = copy.deepcopy(model.state_dict())
     
     print(f'Inital state, Train Loss: {train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}, Val Loss: {val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}')
@@ -124,12 +125,12 @@ def run_training(epoch_num,threshold,model,optimizer,criterion,X_train,y_train,X
         train_accuracies.append(train_accuracy)
         val_accuracies.append(val_accuracy)
     
-        if val_accuracy > pred_val_accuracy:
+        if val_accuracy > best_val_accuracy:
             best_model_wights = copy.deepcopy(model.state_dict())
-            pred_val_accuracy = val_accuracy
+            best_val_accuracy = val_accuracy
 
         if (epoch + 1) % 10 == 0:
-            print(f'Epoch [{epoch+1}/{epoch_num}], Train Loss: {train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}, Val Loss: {val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}')
+            print(f'Epoch [{epoch+1}/{epoch_num}], Train Loss: {train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}, Val Loss: {val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}, Best Val Accuracy: {best_val_accuracy:.4f}')
 
 
     model = MLP()
@@ -171,8 +172,8 @@ def run_selfevolve(epoch_num,threshold,model,criterion,X_train,y_train,X_val,y_v
     val_accuracies = []
     
     train_loss,train_accuracy,val_loss,val_accuracy = eval(model,threshold,criterion,X_train,y_train,X_val,y_val)
-    prev_accuracy = train_accuracy
-    pred_val_accuracy = val_accuracy
+    best_train_accuracy = train_accuracy
+    best_val_accuracy = val_accuracy
     best_model_wights = copy.deepcopy(model.state_dict())
         
     weights = model.get_weights()
@@ -190,21 +191,21 @@ def run_selfevolve(epoch_num,threshold,model,criterion,X_train,y_train,X_val,y_v
         
         train_loss,train_accuracy,val_loss,val_accuracy = eval(model,threshold,criterion,X_train,y_train,X_val,y_val)
         if (epoch + 1) % 10 == 0:
-            print(f'Epoch [{epoch+1}/{epoch_num}], Train Loss: {train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}, Val Loss: {val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}')
+            print(f'Epoch [{epoch+1}/{epoch_num}], Train Loss: {train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}, Val Loss: {val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}, Best Val Accuracy: {best_val_accuracy:.4f}')
 
         train_losses.append(train_loss)
         val_losses.append(val_loss)
         train_accuracies.append(train_accuracy)
         val_accuracies.append(val_accuracy)
         
-        if train_accuracy > prev_accuracy:
+        if train_accuracy > best_train_accuracy:
             prompt += f"Previous your output: {gpt4_output}\n"
             prompt += f"The train loss was {train_loss:.4f} and train accuracy was {train_accuracy:.4f}. Considering the previous inputs and your outputs, please optimize the weights to reduce the learning loss to 0 and improve accuracy to 1.0, then output the model weights in JSON format. The magnitude of the weight changes is up to you.\n"
-            prev_accuracy = train_accuracy
+            best_train_accuracy = train_accuracy
         
-        if val_accuracy > pred_val_accuracy:
+        if val_accuracy > best_val_accuracy:
             best_model_wights = copy.deepcopy(model.state_dict())
-            pred_val_accuracy = val_accuracy
+            best_val_accuracy = val_accuracy
         
         try:
             gpt4_output = get_gpt4_response(prompt)

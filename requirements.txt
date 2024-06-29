@@ -1,2 +1,5 @@
 torch
 numpy
+matplotlib
+openai
+python-dotenv
